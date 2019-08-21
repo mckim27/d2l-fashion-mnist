@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
 
+import d2l
 from mxnet import ndarray as nd
-from mxnet import gluon, init
+from mxnet import gluon, init, autograd
 from mxnet.gluon import loss as gloss, nn
 
 
@@ -15,6 +16,21 @@ def evaluate_accuracy(data_iter, net):
         n += y.size
     return acc_sum / n
 
+
+def l2_penalty(w):
+    return(w**2).sum() / 2
+
+
+
+def dropout(X, drop_prob):
+    assert 0 <= drop_prob <= 1
+    # In this case, all elements are dropped out
+    if drop_prob == 1:
+        return X.zeros_like()
+    # print(nd.random.uniform(0, 1, X.shape))
+    mask = nd.random.uniform(0, 1, X.shape) > drop_prob
+    # print(mask)
+    return mask * X / (1.0-drop_prob)
 
 class FashionMnistModel:
     def __init__(self, num_inputs, num_outputs):
@@ -89,6 +105,70 @@ class MxMlpFashionMnistModel:
         self.net = nn.Sequential()
         self.net.add(nn.Dense(num_hiddens))
         self.net.add(nn.Dense(num_outputs))
+
+        self.net.initialize(init.Normal(sigma=0.01))
+
+        self.loss = gloss.SoftmaxCrossEntropyLoss()
+
+        self.trainer = gluon.Trainer(self.net.collect_params(), 'sgd', {
+            'learning_rate': lr
+        })
+
+class MlpFashionMnistDropOutModel:
+    def __init__(self, num_inputs, num_hiddens1, num_hiddens2, num_outputs, drop_prob1, drop_prob2):
+        self.num_inputs = num_inputs
+        self.num_hiddens1 = num_hiddens1
+        self.num_hiddens2 = num_hiddens2
+        self.num_outputs = num_outputs
+        self.drop_prob1 = drop_prob1
+        self.drop_prob2 = drop_prob2
+
+        self.W1 = nd.random.normal(scale=0.01, shape=(num_inputs, num_hiddens1))
+        self.b1 = nd.zeros(num_hiddens1)
+
+        self.W2 = nd.random.normal(scale=0.01, shape=(num_hiddens1, num_hiddens2))
+        self.b2 = nd.zeros(num_hiddens2)
+
+        self.W3 = nd.random.normal(scale=0.01, shape=(num_hiddens2, num_outputs))
+        self.b3 = nd.zeros(num_outputs)
+
+        self.W1.attach_grad()
+        self.b1.attach_grad()
+        self.W2.attach_grad()
+        self.b2.attach_grad()
+        self.W3.attach_grad()
+        self.b3.attach_grad()
+
+        self.loss = gloss.SoftmaxCrossEntropyLoss()
+
+    def get_params(self):
+        return [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+
+    def net(self, X):
+        X = X.reshape(-1, self.num_inputs)
+
+        H1 = (nd.dot(X, self.W1) + self.b1).relu()
+        if autograd.is_training():
+            H1 = dropout(H1, self.drop_prob1)
+
+        H2 = (nd.dot(H1, self.W2) + self.b2).relu()
+        if autograd.is_training():
+            H2 = dropout(H2, self.drop_prob2)
+
+        return nd.dot(H2, self.W3) + self.b3
+
+
+class MxMlpFashionMnistDropOutModel:
+    def __init__(self, num_hiddens1, num_hiddens2, num_outputs, drop_prob1, drop_prob2, lr):
+        self.net = nn.Sequential()
+
+        self.net.add(
+            nn.Dense(num_hiddens1, activation='relu'),
+            nn.Dropout(drop_prob1),
+            nn.Dense(num_hiddens2, activation='relu'),
+            nn.Dropout(drop_prob2),
+            nn.Dense(num_outputs)
+        )
 
         self.net.initialize(init.Normal(sigma=0.01))
 

@@ -3,21 +3,26 @@
 import argparse
 import d2l
 from data import FashionMnistDataLoader
-from model import FashionMnistModel, MxFashionMnistModel, MlpFashionMnistModel, MxMlpFashionMnistModel, evaluate_accuracy
+from model import FashionMnistModel, MxFashionMnistModel, evaluate_accuracy
+from model import MlpFashionMnistModel, MxMlpFashionMnistModel
+from model import MlpFashionMnistDropOutModel, MxMlpFashionMnistDropOutModel
 from mxnet import autograd
 
-num_epochs = 10
+num_epochs = 15
 lr = 0.1
 num_inputs = 28 * 28
 num_hiddens = 256
+num_hiddens2 = 256
 num_outputs = 10
 batch_size = 256
+
+drop_prob1, drop_prob2 = 0.2, 0.5
 
 
 def main():
     parser = argparse.ArgumentParser(description='D2L Fashion MNIST')
     parser.add_argument('--run_mode', type=str, nargs='?', default='mxnet', help='input run_mode. "raw" or "mxnet"')
-    parser.add_argument('--net_mode', type=str, nargs='?', default='slp', help='input net_mode. "slp" or "mlp"')
+    parser.add_argument('--net_mode', type=str, nargs='?', default='slp', help='input net_mode. "slp" or "mlp" or "mlp_drop"')
     args = parser.parse_args()
     run_mode = args.run_mode
     net_mode = args.net_mode
@@ -28,16 +33,20 @@ def main():
     if run_mode == 'raw':
         if net_mode == 'slp':
             model = FashionMnistModel(num_inputs, num_outputs)
-        else:
+        elif net_mode == 'mlp':
             model = MlpFashionMnistModel(num_inputs, num_hiddens, num_outputs)
+        else:
+            model = MlpFashionMnistDropOutModel(num_inputs, num_hiddens, num_hiddens2, num_outputs, drop_prob1, drop_prob2)
 
         data_loader = FashionMnistDataLoader(batch_size)
         trainer = None
     else:
         if net_mode == 'slp':
             model = MxFashionMnistModel(num_outputs, lr)
-        else:
+        elif net_mode == 'mlp':
             model = MxMlpFashionMnistModel(num_hiddens, num_outputs, lr)
+        else:
+            model = MxMlpFashionMnistDropOutModel(num_hiddens, num_hiddens2, num_outputs, drop_prob1, drop_prob2, lr)
 
         data_loader = FashionMnistDataLoader(batch_size)
         trainer = model.trainer

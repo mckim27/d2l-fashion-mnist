@@ -3,12 +3,13 @@
 import argparse
 import d2l
 from data import FashionMnistDataLoader
-from model import FashionMnistModel, MxFashionMnistModel, evaluate_accuracy
+from model import FashionMnistModel, MxFashionMnistModel, MlpFashionMnistModel, MxMlpFashionMnistModel, evaluate_accuracy
 from mxnet import autograd
 
-num_epochs = 5
+num_epochs = 10
 lr = 0.1
 num_inputs = 28 * 28
+num_hiddens = 256
 num_outputs = 10
 batch_size = 256
 
@@ -16,17 +17,28 @@ batch_size = 256
 def main():
     parser = argparse.ArgumentParser(description='D2L Fashion MNIST')
     parser.add_argument('--run_mode', type=str, nargs='?', default='mxnet', help='input run_mode. "raw" or "mxnet"')
+    parser.add_argument('--net_mode', type=str, nargs='?', default='slp', help='input net_mode. "slp" or "mlp"')
     args = parser.parse_args()
     run_mode = args.run_mode
+    net_mode = args.net_mode
 
     print(f'run {run_mode} code ...')
+    print(f'run {net_mode} ...')
 
     if run_mode == 'raw':
-        model = FashionMnistModel(num_inputs, num_outputs)
+        if net_mode == 'slp':
+            model = FashionMnistModel(num_inputs, num_outputs)
+        else:
+            model = MlpFashionMnistModel(num_inputs, num_hiddens, num_outputs)
+
         data_loader = FashionMnistDataLoader(batch_size)
         trainer = None
     else:
-        model = MxFashionMnistModel(lr)
+        if net_mode == 'slp':
+            model = MxFashionMnistModel(num_outputs, lr)
+        else:
+            model = MxMlpFashionMnistModel(num_hiddens, num_outputs, lr)
+
         data_loader = FashionMnistDataLoader(batch_size)
         trainer = model.trainer
 

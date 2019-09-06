@@ -177,3 +177,29 @@ class MxMlpFashionMnistDropOutModel:
         self.trainer = gluon.Trainer(self.net.collect_params(), 'sgd', {
             'learning_rate': lr
         })
+
+
+class ConvLeNetModel:
+    def __init__(self, lr):
+        self.net = nn.Sequential()
+
+        self.net.add(
+            nn.Conv2D(channels=6, kernel_size=5, padding=2, activation='sigmoid'),
+            nn.AvgPool2D(pool_size=2, strides=2),
+            nn.Conv2D(channels=16, kernel_size=5, activation='sigmoid'),
+            nn.AvgPool2D(pool_size=2, strides=2),
+            # Dense will transform the input of the shape (batch size, channel,
+            # height, width) into the input of the shape (batch size,
+            # channel * height * width) automatically by default
+            nn.Dense(120, activation='sigmoid'),
+            nn.Dense(84, activation='sigmoid'),
+            nn.Dense(10)
+        )
+
+        self.net.initialize(force_reinit=True, init=init.Xavier())
+
+        self.loss = gloss.SoftmaxCrossEntropyLoss()
+
+        self.trainer = gluon.Trainer(self.net.collect_params(), 'sgd', {
+            'learning_rate': lr
+        })

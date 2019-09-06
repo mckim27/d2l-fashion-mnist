@@ -5,7 +5,7 @@ import d2l
 from data import FashionMnistDataLoader
 from model import FashionMnistModel, MxFashionMnistModel, evaluate_accuracy
 from model import MlpFashionMnistModel, MxMlpFashionMnistModel
-from model import MlpFashionMnistDropOutModel, MxMlpFashionMnistDropOutModel
+from model import MlpFashionMnistDropOutModel, MxMlpFashionMnistDropOutModel, ConvLeNetModel
 from mxnet import autograd
 
 num_epochs = 15
@@ -45,6 +45,8 @@ def main():
             model = MxFashionMnistModel(num_outputs, lr)
         elif net_mode == 'mlp':
             model = MxMlpFashionMnistModel(num_hiddens, num_outputs, lr)
+        elif net_mode == 'LeNet':
+            model = ConvLeNetModel(lr)
         else:
             model = MxMlpFashionMnistDropOutModel(num_hiddens, num_hiddens2, num_outputs, drop_prob1, drop_prob2, lr)
 
